@@ -1,3 +1,3 @@
 # autovel
 
-奈落鯖用のBot「AutoVel」
+糞コワ
