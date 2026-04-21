@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Windows Security Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@300;400;600;700&display=swap');
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #f3f3f3;
+            color: #333;
+            font-family: 'Segoe UI', "Meiryo", sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .stage {
+            display: none;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .active {
+            display: flex !important;
+            flex-direction: column;
+        }
+
+        .window-box {
+            background: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            width: 90%;
+            max-width: 600px;
+        }
+
+        #bsod {
+            background-color: #0078d7;
+            color: white;
+            padding: 10% 8%;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        .progress-outer {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .progress-inner {
+            width: 0%;
+            height: 100%;
+            background: #0078d7;
+            transition: width 0.3s linear;
+        }
+
+        .log-line {
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 2px;
+        }
+
+        .alert-text {
+            color: #d83b01;
+            font-weight: 600;
+        }
+
+        #upload-logs {
+            font-family: 'Consolas', monospace;
+            font-size: 11px;
+            color: #0f0;
+            background: #000;
+            padding: 10px;
+            height: 250px; /* ログ増量に伴い高さを調整 */
+            overflow: hidden;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="stage-start" class="stage active items-center justify-center bg-[#f3f3f3]">
+        <div class="window-box p-8">
+            <div class="flex items-center mb-6">
+                <svg class="w-10 h-10 text-blue-600 mr-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                <h1 class="text-xl font-semibold">Windows セキュリティ診断</h1>
+            </div>
+            <p class="text-gray-600 mb-8 leading-relaxed">デバイスの健全性と互換性をスキャンしています。この処理には数分かかる場合があります。ブラウザを閉じないでください。</p>
+            <div id="init-btn-container">
+                <button id="start-btn" class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-all font-medium">スキャンを開始</button>
+            </div>
+            <p class="mt-10 text-xs text-gray-400">Microsoft Security Engine v4.1.8 (Last update: Today)</p>
+        </div>
+    </div>
+
+    <div id="stage-scanning" class="stage items-center justify-center">
+        <div class="window-box p-8">
+            <h2 class="text-lg font-semibold mb-2" id="scan-title">システム整合性を確認中...</h2>
+            <p class="text-sm text-gray-500 mb-4" id="scan-target">C:\Windows\System32\drivers\...</p>
+            <div class="progress-outer mb-6">
+                <div id="main-progress" class="progress-inner"></div>
+            </div>
+            <div id="scan-logs" class="h-60 overflow-hidden border-t border-gray-100 pt-4">
+                <!-- ログがここに流れる -->
+            </div>
+        </div>
+    </div>
+
+    <div id="stage-breach" class="stage items-center justify-center bg-black">
+        <div class="text-center p-6 w-full max-w-lg">
+            <div class="w-16 h-16 border-4 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+            <h2 class="text-red-600 text-2xl font-bold mb-4">CRITICAL SYSTEM FAILURE</h2>
+            <p class="text-white text-sm mb-8 opacity-80">外部IP 45.122.8.192 からの不正なアクセスを検出しました。</p>
+            
+            <div id="upload-logs" class="text-left">
+                <!-- ここに流出ログが表示される -->
+            </div>
+        </div>
+    </div>
+
+    <div id="stage-ransom" class="stage items-center justify-center bg-[#500000] text-white">
+        <div class="max-w-2xl text-center px-10">
+            <h1 class="text-5xl font-black mb-6">SYSTEM LOCKED</h1>
+            <p class="text-lg mb-8 leading-relaxed">あなたのデバイス内のすべてのデータ（写真、文書、パスワード、連絡先）は、強力なAES-256アルゴリズムによって暗号化されました。</p>
+            <div class="bg-black p-4 mb-4 font-mono border-2 border-white/20">
+                USER_ID: <span class="text-yellow-400">BR-0921-X883</span><br>
+                STATUS: ENCRYPTED
+            </div>
+            <div class="bg-red-900 p-6 mb-6 rounded-lg border-2 border-white shadow-2xl">
+                <p class="text-sm mb-2 font-bold uppercase tracking-widest">重要：暗号化キーを取得するには直ちに連絡してください</p>
+                <p class="text-xs opacity-80 mb-4">カスタマーサポートセンター（24時間対応）</p>
+                <span class="text-3xl font-black tracking-tighter text-yellow-300">090-1932-2692</span>
+            </div>
+            <p class="text-sm opacity-70 mb-4">残り時間：</p>
+            <div class="text-4xl font-mono" id="ransom-timer">47:59:59</div>
+        </div>
+    </div>
+
+    <div id="bsod" class="stage">
+        <div class="text-9xl mb-8">:(</div>
+        <div class="text-2xl mb-8 leading-snug">問題が発生したため、PC を再起動する必要があります。<br>エラー情報を収集しています。自動的に再起動します。</div>
+        <div class="text-2xl mb-12"><span id="bsod-percent">0</span>% 完了</div>
+        <div class="text-sm opacity-80 leading-relaxed">
+            詳細については、後でオンラインでこのエラーを検索してください: <br>
+            <b>CRITICAL_PROCESS_DIED</b><br><br>
+            サポート担当者に連絡する場合は、次の番号に電話してください:<br>
+            <b class="text-lg">090-6505-0811</b>
+        </div>
+    </div>
+
+    <div id="stage-reveal" class="stage items-center justify-center text-black p-10" style="background-image: url('kimosotu.png'); background-size: cover; background-position: center; background-repeat: no-repeat;">
+        <div class="bg-white/80 p-10 rounded-2xl backdrop-blur-sm text-center shadow-2xl">
+            <div class="text-8xl mb-6">😜</div>
+            <h1 class="text-4xl font-black mb-4">ドッキリ成功！！</h1>
+            <p class="text-xl text-gray-800 mb-10">全部フェイクです。<br>あなたのスマホもデータも、一切無事です！<br>3分間お疲れ様でした（笑）</p>
+            <button onclick="location.reload()" class="px-10 py-3 bg-blue-600 text-white rounded-lg font-bold shadow-lg hover:bg-blue-700 transition-all">戻る</button>
+        </div>
+    </div>
+
+    <script>
+        const startBtn = document.getElementById('start-btn');
+        const stages = {
+            start: document.getElementById('stage-start'),
+            scanning: document.getElementById('stage-scanning'),
+            breach: document.getElementById('stage-breach'),
+            ransom: document.getElementById('stage-ransom'),
+            bsod: document.getElementById('bsod'),
+            reveal: document.getElementById('stage-reveal')
+        };
+
+        const progressInner = document.getElementById('main-progress');
+        const scanLogs = document.getElementById('scan-logs');
+        const uploadLogs = document.getElementById('upload-logs');
+        const bsodPercent = document.getElementById('bsod-percent');
+
+        function changeStage(stageKey) {
+            Object.values(stages).forEach(s => s.classList.remove('active'));
+            stages[stageKey].classList.add('active');
+        }
+
+        startBtn.onclick = () => {
+            if (document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            }
+            changeStage('scanning');
+            runTimeline();
+        };
+
+        function runTimeline() {
+            let time = 0;
+            const totalDuration = 180; // 3分
+
+            // スキャンログ（SUCCESS）用タイマー: 45秒で300個
+            let logCounter = 0;
+            const maxScanLogs = 300;
+            const logIntervalTime = (45 * 1000) / maxScanLogs;
+
+            // 異常検出ログ用タイマー: 14秒で約80個
+            let errorLogCounter = 0;
+            const maxErrorLogs = 80;
+            const errorLogIntervalTime = (14 * 1000) / maxErrorLogs;
+
+            // 不正アクセスログ用タイマー: 80秒で200個 (2.5倍速以上の密度)
+            let breachLogCounter = 0;
+            const maxBreachLogs = 200;
+            const breachLogIntervalTime = (80 * 1000) / maxBreachLogs;
+
+            const timer = setInterval(() => {
+                time++;
+
+                // 1. スキャンフェーズ (0-45s)
+                if (time <= 45) {
+                    const p = (time / 45) * 80;
+                    progressInner.style.width = p + '%';
+                }
+
+                // SUCCESSログの開始
+                if (time === 1) {
+                    const logTimer = setInterval(() => {
+                        if (logCounter >= maxScanLogs || time > 45) {
+                            clearInterval(logTimer);
+                            return;
+                        }
+                        const paths = ["C:\\Windows\\System32\\", "C:\\Program Files\\", "C:\\Users\\Admin\\", "C:\\Windows\\SysWOW64\\"];
+                        const extensions = [".dll", ".sys", ".exe", ".dat", ".ini"];
+                        const fileName = Math.random().toString(36).substring(7);
+                        const fullPath = paths[Math.floor(Math.random() * paths.length)] + fileName + extensions[Math.floor(Math.random() * extensions.length)];
+                        addLog(scanLogs, `Checking: ${fullPath}... [SUCCESS]`);
+                        logCounter++;
+                    }, logIntervalTime);
+                }
+
+                // 2. 異常発生フェーズ (46-60s): 警告ログ80個
+                if (time === 46) {
+                    document.getElementById('scan-title').innerText = "警告: 整合性エラーを検出";
+                    document.getElementById('scan-title').style.color = "#d83b01";
+                    
+                    const errorTimer = setInterval(() => {
+                        if (errorLogCounter >= maxErrorLogs || time > 60) {
+                            clearInterval(errorTimer);
+                            return;
+                        }
+                        const errors = [
+                            "CRITICAL: Memory parity mismatch at 0x" + Math.floor(Math.random()*16777215).toString(16),
+                            "WARNING: Unauthorized handle detected in System process",
+                            "ERROR: File signature invalid for kernel_ext.dll",
+                            "SECURITY ALERT: Unexpected process injection in wininit.exe"
+                        ];
+                        addLog(scanLogs, errors[Math.floor(Math.random()*errors.length)], "alert-text");
+                        errorLogCounter++;
+                    }, errorLogIntervalTime);
+                }
+
+                // 3. 乗っ取りフェーズ (60-140s): ログ200個
+                if (time === 60) {
+                    changeStage('breach');
+                    const breachTimer = setInterval(() => {
+                        if (breachLogCounter >= maxBreachLogs || time > 140) {
+                            clearInterval(breachTimer);
+                            return;
+                        }
+                        const items = ["Photos", "Contacts", "SMS_History", "Passwords.db", "Browsing_History", "Keychain", "Credit_Card_Cache"];
+                        const action = Math.random() > 0.5 ? "SENDING" : "EXTRACTING";
+                        addLog(uploadLogs, `${action}: /System/User/Local/${items[Math.floor(Math.random()*items.length)]}/ ... [OK]`);
+                        breachLogCounter++;
+                    }, breachLogIntervalTime);
+                }
+
+                // 4. ランサムウェア (140-170s)
+                if (time === 140) {
+                    changeStage('ransom');
+                }
+
+                // 5. ブルースクリーン (170s-180s)
+                if (time === 170) {
+                    changeStage('bsod');
+                }
+                if (time > 170 && time < 180) {
+                    let p = Math.floor(((time - 170) / 10) * 100);
+                    bsodPercent.innerText = p;
+                }
+
+                // 6. ネタばらし
+                if (time >= 180) {
+                    clearInterval(timer);
+                    changeStage('reveal');
+                    if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+                }
+
+            }, 1000);
+        }
+
+        function addLog(container, text, className = "log-line") {
+            if (!container) return;
+            const div = document.createElement('div');
+            div.className = className;
+            div.innerText = `> ${text}`;
+            container.prepend(div);
+        }
+
+        window.onbeforeunload = function() {
+            return "システムが重大な危機にあります。ページを離れるとデータが永久に失われる可能性があります。";
+        };
+        
+        document.addEventListener('contextmenu', e => e.preventDefault());
+    </script>
+</body>
+</html>
